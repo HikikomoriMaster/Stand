@@ -9,165 +9,90 @@
 import UIKit
 import HealthKit
 
-class ViewController: UIViewController{
+class ViewController: UIViewController, UITextFieldDelegate, UITableViewDataSource, UITabBarDelegate{
     
-    //UIKit
-    let keyColor: UIColor = UIColor.hex(string: "#4527A0", alpha: 1.0)
-    @IBOutlet weak var startDate: UITextField!
-    @IBOutlet weak var endDate: UITextField!
-    
+    @IBOutlet weak var headerView: UIView!
+    @IBOutlet weak var startDateLabel: UILabel!
+    @IBOutlet weak var arrowLabel: UILabel!
+    @IBOutlet weak var endDateLabel: UILabel!
+    @IBOutlet weak var messageLabel: UILabel!
 
-    // HealthKit
-    let healthStore = HKHealthStore()
-    let objectTypes: Set<HKObjectType> = [
-        HKObjectType.activitySummaryType()
-    ]
+    @IBOutlet weak var startDate: DatePickerInput!
+    @IBOutlet weak var endDate: DatePickerInput!
+
+    @IBOutlet weak var getDataButton: UIButton!
+
+    @IBOutlet weak var tableView: UITableView!
+    
+    let healthStore: HKHealthStore = HKHealthStore()
+    let objectTypes: Set<HKObjectType> = [HKObjectType.activitySummaryType()]
+    var dataSource: [HKActivitySummary] = [HKActivitySummary]()
+    let formatter: DateFormatter = DateFormatter()
     
     override func viewDidLoad() {
+        
         super.viewDidLoad()
+        
+        headerView.backgroundColor = BlueColor.getColor(palette: .vd)
 
+        let textColor = BlueColor.getColor(palette: .pg)
+        startDateLabel.textColor = textColor
+        arrowLabel.textColor = textColor
+        endDateLabel.textColor = textColor
+        messageLabel.textColor = textColor
+
+        getDataButton.backgroundColor = BlueColor.getColor(palette: .g)
+        getDataButton.addTarget(self, action: #selector(getStandCount(_:)), for: UIControl.Event.touchUpInside)
+
+        tableView.tableFooterView = UIView.init(frame: CGRect.zero)
+        
+        formatter.dateFormat = "yyyy/MM/dd"
+
+        authorization()
+    }
+
+    func authorization() {
         // アクセス権の確認画面を表示
         let status = healthStore.authorizationStatus(for: HKObjectType.activitySummaryType())
         if status == HKAuthorizationStatus.notDetermined {
             healthStore.requestAuthorization(toShare: nil, read: objectTypes) { (success, error) in }
         }
-        
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
-        let start = formatter.date(from: "2018-11-01T11:08:17.098+09:00")
-        
-        getStandCount(startDate: start!, endDate: Date())
-        
-        // 日付入力のセットアップ
-        textFieldSetup()
     }
     
-    func textFieldSetup() {
-        let startDateToolBar = UIToolbar()
-        startDateToolBar.sizeToFit()
-        let startDateToolBarButton = UIBarButtonItem(title: "OK", style: .plain, target: self, action: #selector(startDateFinishEditing(_:)))
-        startDateToolBar.items = [startDateToolBarButton]
-        
-        startDate.inputAccessoryView = startDateToolBar
-        startDate.addTarget(self, action: #selector(startDateTouchUpInside(_:)), for: UIControl.Event.allTouchEvents)
-        startDate.addBorderBottom(height: 2.0, color: keyColor)
-
-        let endDateToolBar = UIToolbar()
-        endDateToolBar.sizeToFit()
-        let endDateToolBarButton = UIBarButtonItem(title: "OK", style: .plain, target: self, action: #selector(endDateFinishEditing(_:)))
-        endDateToolBar.items = [endDateToolBarButton]
-        
-        endDate.inputAccessoryView = endDateToolBar
-        endDate.addTarget(self, action: #selector(endDateTouchUpInside(_:)), for: UIControl.Event.allTouchEvents)
-        endDate.addBorderBottom(height: 2.0, color: keyColor)
-    }
-    
-    @objc func startDateTouchUpInside(_ sender: UITextField) {
-        let datePickerView: UIDatePicker = UIDatePicker()
-        datePickerView.datePickerMode = UIDatePicker.Mode.date
-        sender.inputView = datePickerView
-        datePickerView.addTarget(self, action: #selector(startDatePickerValueChanged(_:)), for: UIControl.Event.valueChanged)
-    }
-
-    @objc func startDatePickerValueChanged(_ sender: UIDatePicker) {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat  = "yyyy/MM/dd";
-        startDate.text = dateFormatter.string(from: sender.date)
-    }
-
-    @objc func startDateFinishEditing(_ sender: UITextField){
-        startDate.resignFirstResponder()
-    }
-    
-    @objc func endDateTouchUpInside(_ sender: UITextField) {
-        let datePickerView: UIDatePicker = UIDatePicker()
-        datePickerView.datePickerMode = UIDatePicker.Mode.date
-        datePickerView.addTarget(self, action: #selector(endDatePickerValueChanged(_:)), for: UIControl.Event.valueChanged)
-        sender.inputView = datePickerView
-    }
-
-    @objc func endDatePickerValueChanged(_ sender: UIDatePicker) {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat  = "yyyy/MM/dd";
-        endDate.text = dateFormatter.string(from: sender.date)
-    }
-    
-    @objc func endDateFinishEditing(_ sender: UITextField){
-        endDate.resignFirstResponder()
-    }
-    
-    func getStandCount(startDate: Date, endDate: Date) {
-       
+    @objc func getStandCount(_ sender: Any) {
         let calendar = Calendar.autoupdatingCurrent
-        
-        var startDateComponents = calendar.dateComponents([.year, .month, .day], from:startDate)
+        var startDateComponents = calendar.dateComponents([.year, .month, .day], from: startDate.getDate())
         startDateComponents.calendar = calendar
-
-        var endDateComponents = calendar.dateComponents([.year, .month, .day], from:endDate)
+        var endDateComponents = calendar.dateComponents([.year, .month, .day], from: endDate.getDate())
         endDateComponents.calendar = calendar
-
-
-        let aStandHour =  HKCategoryType.categoryType(forIdentifier: .appleStandHour)
         
-        
-        let thepredicate = HKQuery.predicateForSamples(withStart: startDate, end: endDate, options: [])
-            //HKQuery.predicateForCategorySamples(with: .greaterThanOrEqualTo, value: 0)
-        
-        let endDatea: NSSortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
-
-        
-        let sHourQuery = HKSampleQuery(sampleType: aStandHour!,
-                                       predicate: thepredicate,
-                                       limit: 100,
-                                       sortDescriptors: [endDatea],
-                                       resultsHandler: {(query, results, error) in
-            
-            // 実行後
-            if error == nil{
-            if let samples = results as? [HKCategorySample]{
-                samples.forEach({ data in
-                                    var formatter = DateFormatter()
-                                    formatter.dateFormat = "yyyy/MM/dd"
-                    
-                    print(data)
-                    
-                                })
-                
-                }
-                                        }
+        let predicate = HKQuery.predicate(forActivitySummariesBetweenStart: startDateComponents, end: endDateComponents)
+        let query = HKActivitySummaryQuery(predicate: predicate) { (query, summaries, error) in
+            guard let summaries = summaries, summaries.count > 0
+                else {
+                    // No data returned. Perhaps check for error
+                    self.dataSource = [HKActivitySummary]()
+                    return
+            }
+            self.dataSource = summaries
         }
-            )
-        
-        
-        
-        
-        // Start the query
-        healthStore.execute(sHourQuery)
-        
-//
-//        let predicate = HKQuery.predicate(forActivitySummariesBetweenStart: startDateComponents, end: endDateComponents)
-//
-//        let query = HKActivitySummaryQuery(predicate: predicate) { (query, summaries, error) in
-//
-//            guard let summaries = summaries, summaries.count > 0
-//                else {
-//                    // No data returned. Perhaps check for error
-//                    return
-//            }
-//
-//            let standUnit = HKUnit.count()
-//
-//            summaries.forEach({ data in
-//                var formatter = DateFormatter()
-//                formatter.dateFormat = "yyyy/MM/dd"
-//
-//
-//                let date =  formatter.string(from: data.dateComponents(for: Calendar.current).date!)
-//
-//                let count = data.appleStandHours.doubleValue(for: standUnit)
-//                print(date, count)
-//            })
-//        }
-//        healthStore.execute(query)
+        healthStore.execute(query)
+    }
+    
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return dataSource.count
+    }
+    
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let data = dataSource[indexPath.row]
+        let date = self.formatter.string(from: data.dateComponents(for: Calendar.current).date!)
+        let standUnit = HKUnit.count()
+        let count = Int(data.appleStandHours.doubleValue(for: standUnit))
+
+        let cell = tableView.dequeueReusableCell(withIdentifier: "cell")
+        cell?.textLabel?.text  = date
+        cell?.detailTextLabel?.text = "\(count)回"
+
+        return cell!
     }
 }
