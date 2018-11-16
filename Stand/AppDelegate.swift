@@ -2,7 +2,7 @@
 //  AppDelegate.swift
 //  Stand
 //
-//  Created by 深石祐太朗 on 2018/11/08.
+//  Created by HikikomoriMaster on 2018/11/08.
 //  Copyright © 2018 HikikomoriMaster. All rights reserved.
 //
 

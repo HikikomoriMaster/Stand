@@ -2,7 +2,7 @@
 //  ViewController.swift
 //  Stand
 //
-//  Created by 深石祐太朗 on 2018/11/08.
+//  Created by HikikomoriMaster on 2018/11/08.
 //  Copyright © 2018 HikikomoriMaster. All rights reserved.
 //
 
@@ -39,7 +39,6 @@ class ViewController: UIViewController, UITextFieldDelegate, UITableViewDataSour
         startDateLabel.textColor = textColor
         arrowLabel.textColor = textColor
         endDateLabel.textColor = textColor
-        messageLabel.textColor = textColor
 
         getDataButton.backgroundColor = BlueColor.getColor(palette: .g)
         getDataButton.addTarget(self, action: #selector(getStandCount(_:)), for: UIControl.Event.touchUpInside)
@@ -61,9 +60,27 @@ class ViewController: UIViewController, UITextFieldDelegate, UITableViewDataSour
     
     @objc func getStandCount(_ sender: Any) {
         let calendar = Calendar.autoupdatingCurrent
-        var startDateComponents = calendar.dateComponents([.year, .month, .day], from: startDate.getDate())
+
+        let startDateTarget = formatter.date(from: startDate.getDate())
+        let endDateTarget = formatter.date(from: endDate.getDate())
+        
+        // 開始日が終了日よりも未来の場合はメッセージを表示
+        if startDateTarget?.compare(endDateTarget!) == ComparisonResult.orderedDescending {
+            showMessage(hasError:true, msg: "StartDate Must Be Earlier Than EndDate.")
+            return
+        }
+        
+        // どちらも未来日の時はメッセージを表示
+        if startDateTarget?.compare(Date()) == ComparisonResult.orderedDescending &&
+            endDateTarget?.compare(Date()) == ComparisonResult.orderedDescending {
+            showMessage(hasError:true, msg: "No Data. Future Date is Selected")
+            return
+        }
+        
+        var startDateComponents = calendar.dateComponents([.year, .month, .day], from: startDateTarget!)
         startDateComponents.calendar = calendar
-        var endDateComponents = calendar.dateComponents([.year, .month, .day], from: endDate.getDate())
+        
+        var endDateComponents = calendar.dateComponents([.year, .month, .day], from: endDateTarget!)
         endDateComponents.calendar = calendar
         
         let predicate = HKQuery.predicate(forActivitySummariesBetweenStart: startDateComponents, end: endDateComponents)
@@ -72,11 +89,33 @@ class ViewController: UIViewController, UITextFieldDelegate, UITableViewDataSour
                 else {
                     // No data returned. Perhaps check for error
                     self.dataSource = [HKActivitySummary]()
+                    DispatchQueue.main.async {
+                        self.showMessage(hasError: false, msg: "No Data.")
+                    }
                     return
             }
             self.dataSource = summaries
+            DispatchQueue.main.async {
+                self.tableView.reloadData()
+            }
         }
         healthStore.execute(query)
+    }
+    
+    func showMessage(hasError:Bool, msg: String) {
+        messageLabel.text = msg
+        if hasError {
+            messageLabel.textColor = UIColor.init(hex: "#FF0098")   // Magenta
+        } else {
+            messageLabel.textColor = BlueColor.getColor(palette: .pg)
+        }
+        
+        dataSource = [HKActivitySummary]()
+        tableView.reloadData()
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            self.messageLabel.text = ""
+        }
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -91,7 +130,7 @@ class ViewController: UIViewController, UITextFieldDelegate, UITableViewDataSour
 
         let cell = tableView.dequeueReusableCell(withIdentifier: "cell")
         cell?.textLabel?.text  = date
-        cell?.detailTextLabel?.text = "\(count)回"
+        cell?.detailTextLabel?.text = "\(count) stand"
 
         return cell!
     }

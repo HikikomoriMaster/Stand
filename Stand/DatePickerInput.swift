@@ -2,7 +2,7 @@
 //  DatePickerInput.swift
 //  Stand
 //
-//  Created by 深石祐太朗 on 2018/11/15.
+//  Created by HikikomoriMaster on 2018/11/15.
 //  Copyright © 2018 HikikomoriMaster. All rights reserved.
 //
 
@@ -88,8 +88,8 @@ class DatePickerInput: UITextField {
     }
     
     // クラス外から日付を取り出すためのメソッド
-    func getDate() -> Date {
-        return datePicker.date
+    func getDate() -> String {
+        return text!
     }
     
     // コピペ等禁止
