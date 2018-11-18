@@ -9,16 +9,6 @@
 import Foundation
 import UIKit
 
-// https://qiita.com/Simmon/items/5f8aae6b23e3c82cb735
-extension UITextField {
-    func addBorderBottom(height: CGFloat, color: UIColor) {
-        let border = CALayer()
-        border.frame = CGRect(x: 0, y: self.frame.height - height, width: self.frame.width, height: height)
-        border.backgroundColor = color.cgColor
-        self.layer.addSublayer(border)
-    }
-}
-
 // https://qiita.com/wai21/items/c25740cbf1ce0c031eff
 class DatePickerInput: UITextField {
     private var datePicker: UIDatePicker!
@@ -39,7 +29,8 @@ class DatePickerInput: UITextField {
         datePicker.date = Date()
         datePicker.datePickerMode = .date
         datePicker.addTarget(self, action: #selector(setText), for: .valueChanged)
-        
+        datePicker.timeZone = TimeZone.current
+
         // textFieldのtextに日付を表示する
         setText()
         
@@ -47,9 +38,14 @@ class DatePickerInput: UITextField {
         inputAccessoryView = createToolbar()
         
         // 枠無しのUITextFieldに下線をつける
-        let borderColor: UIColor = BlueColor.getColor(palette: .g)
-        addBorderBottom(height: 3.0, color: borderColor)
-        addBorderBottom(height: 3.0, color: borderColor)
+        // https://qiita.com/Simmon/items/5f8aae6b23e3c82cb735
+        let border = CALayer()
+        let borderHeight: CGFloat = 3.0
+        let borderColor: UIColor = BlueColor.getColor(tone: .g)
+
+        border.frame = CGRect(x: 0, y: self.frame.height - borderHeight, width: self.frame.width, height: borderHeight)
+        border.backgroundColor = borderColor.cgColor
+        self.layer.addSublayer(border)
     }
     
     // キーボードのアクセサリービューを作成する
@@ -61,29 +57,23 @@ class DatePickerInput: UITextField {
         space.width = 12
         
         let flexSpaceItem = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: self, action: nil)
-        let todayButtonItem = UIBarButtonItem(title: "Today", style: .done, target: self, action: #selector(todayPicker))
         let doneButtonItem = UIBarButtonItem(title: "Done", style: .done, target: self, action: #selector(donePicker))
-        let toolbarItems = [flexSpaceItem, todayButtonItem, doneButtonItem, space]
-        
+        let toolbarItems = [flexSpaceItem, doneButtonItem, space]
         toolbar.setItems(toolbarItems, animated: true)
         
         return toolbar
     }
     
-    // キーボードの完了ボタンタップ時に呼ばれる
     @objc private func donePicker() {
         resignFirstResponder()
-    }
-    // キーボードの今日ボタンタップ時に呼ばれる
-    @objc private func todayPicker() {
-        datePicker.date = Date()
-        setText()
     }
     
     // datePickerの日付けをtextFieldのtextに反映させる
     @objc private func setText() {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy/MM/dd"
+        formatter.timeZone = TimeZone.current
+
         text = formatter.string(from: datePicker.date)
     }
     

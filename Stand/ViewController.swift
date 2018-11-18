@@ -9,58 +9,75 @@
 import UIKit
 import HealthKit
 
-class ViewController: UIViewController, UITextFieldDelegate, UITableViewDataSource, UITabBarDelegate{
+struct StandData {
+    let start: Int
+    let stood: Int
+}
+
+class ViewController: UIViewController, UITextFieldDelegate, UITableViewDataSource {
     
     @IBOutlet weak var headerView: UIView!
     @IBOutlet weak var startDateLabel: UILabel!
     @IBOutlet weak var arrowLabel: UILabel!
     @IBOutlet weak var endDateLabel: UILabel!
     @IBOutlet weak var messageLabel: UILabel!
-
     @IBOutlet weak var startDate: DatePickerInput!
     @IBOutlet weak var endDate: DatePickerInput!
-
     @IBOutlet weak var getDataButton: UIButton!
-
     @IBOutlet weak var tableView: UITableView!
-    
-    let healthStore: HKHealthStore = HKHealthStore()
-    let objectTypes: Set<HKObjectType> = [HKObjectType.activitySummaryType()]
-    var dataSource: [HKActivitySummary] = [HKActivitySummary]()
+
+    var dateOrder: [String] = []
+    var dataSource: [String : [StandData]] = [:]
     let formatter: DateFormatter = DateFormatter()
+    let healthStore: HKHealthStore = HKHealthStore()
+    let objectTypes: Set<HKObjectType> = [
+        HKObjectType.activitySummaryType(),
+        HKObjectType.categoryType(forIdentifier: HKCategoryTypeIdentifier.appleStandHour)!
+    ]
     
     override func viewDidLoad() {
-        
         super.viewDidLoad()
+        authorization()
         
-        headerView.backgroundColor = BlueColor.getColor(palette: .vd)
-
-        let textColor = BlueColor.getColor(palette: .pg)
+        let textColor = BlueColor.getColor(tone: .pg)
         startDateLabel.textColor = textColor
         arrowLabel.textColor = textColor
         endDateLabel.textColor = textColor
-
-        getDataButton.backgroundColor = BlueColor.getColor(palette: .g)
-        getDataButton.addTarget(self, action: #selector(getStandCount(_:)), for: UIControl.Event.touchUpInside)
-
-        tableView.tableFooterView = UIView.init(frame: CGRect.zero)
+        headerView.backgroundColor = BlueColor.getColor(tone: .vd)
+        getDataButton.backgroundColor = BlueColor.getColor(tone: .g)
+        getDataButton.addTarget(self, action: #selector(getStandCountDetail(_:)), for: UIControl.Event.touchUpInside)
         
         formatter.dateFormat = "yyyy/MM/dd"
+        formatter.timeZone = TimeZone.current
 
-        authorization()
+        tableView.tableFooterView = UIView.init(frame: CGRect.zero)
+        tableView.register(UINib(nibName: "StandDataTableViewCell", bundle: nil), forCellReuseIdentifier: "StandDataTableViewCell")
     }
-
+    
+    // アクセス権の確認画面を表示
     func authorization() {
-        // アクセス権の確認画面を表示
         let status = healthStore.authorizationStatus(for: HKObjectType.activitySummaryType())
         if status == HKAuthorizationStatus.notDetermined {
             healthStore.requestAuthorization(toShare: nil, read: objectTypes) { (success, error) in }
         }
     }
-    
-    @objc func getStandCount(_ sender: Any) {
-        let calendar = Calendar.autoupdatingCurrent
 
+    // UITableViewDataSource
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return dataSource.count
+    }
+    
+    // UITextFieldDelegate
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let dateKey = dateOrder[indexPath.row]
+        let cell = tableView.dequeueReusableCell(withIdentifier: "StandDataTableViewCell") as! StandDataTableViewCell
+        cell.setData(date: dateKey, standData: dataSource[dateKey]!)
+        return cell
+    }
+    
+    @objc func getStandCountDetail(_ sender: Any) {
+        // 取得したいデータのタイプを生成.
+        let categoryType = HKSampleType.categoryType(forIdentifier: HKCategoryTypeIdentifier.appleStandHour)
         let startDateTarget = formatter.date(from: startDate.getDate())
         let endDateTarget = formatter.date(from: endDate.getDate())
         
@@ -69,69 +86,70 @@ class ViewController: UIViewController, UITextFieldDelegate, UITableViewDataSour
             showMessage(hasError:true, msg: "StartDate Must Be Earlier Than EndDate.")
             return
         }
-        
         // どちらも未来日の時はメッセージを表示
-        if startDateTarget?.compare(Date()) == ComparisonResult.orderedDescending &&
-            endDateTarget?.compare(Date()) == ComparisonResult.orderedDescending {
-            showMessage(hasError:true, msg: "No Data. Future Date is Selected")
+        if startDateTarget?.compare(Date()) == ComparisonResult.orderedDescending
+            && endDateTarget?.compare(Date()) == ComparisonResult.orderedDescending {
+            showMessage(hasError:false, msg: "Data Not Found. Future Date is Selected")
             return
         }
         
-        var startDateComponents = calendar.dateComponents([.year, .month, .day], from: startDateTarget!)
-        startDateComponents.calendar = calendar
-        
-        var endDateComponents = calendar.dateComponents([.year, .month, .day], from: endDateTarget!)
-        endDateComponents.calendar = calendar
-        
-        let predicate = HKQuery.predicate(forActivitySummariesBetweenStart: startDateComponents, end: endDateComponents)
-        let query = HKActivitySummaryQuery(predicate: predicate) { (query, summaries, error) in
-            guard let summaries = summaries, summaries.count > 0
-                else {
-                    // No data returned. Perhaps check for error
-                    self.dataSource = [HKActivitySummary]()
-                    DispatchQueue.main.async {
-                        self.showMessage(hasError: false, msg: "No Data.")
-                    }
-                    return
+        // 登録順ソートの設定
+        let mySortDescriptor = NSSortDescriptor(key:HKSampleSortIdentifierStartDate, ascending: true)
+        let predicate = HKQuery.predicateForSamples(withStart: startDateTarget, end: endDateTarget, options: [])
+        let mySampleQuery = HKSampleQuery(sampleType: categoryType!, predicate: predicate, limit: 0, sortDescriptors: [mySortDescriptor]) {(query, results, error ) in
+
+            self.dataSource = [:]
+            self.dateOrder = []
+            
+            if let e = error {
+                self.showMessage(hasError: false, msg: e.localizedDescription)
+                return
             }
-            self.dataSource = summaries
+            
+            guard (results != nil) && (results?.count)! > 0 else {
+                self.showMessage(hasError: false, msg: "Data Not Found.")
+                return
+            }
+            
+            results!.forEach({ result in
+                let calendar = Calendar.autoupdatingCurrent
+                let startDateComponents = calendar.dateComponents([.hour], from: result.startDate)
+                let key = self.formatter.string(from: result.startDate)
+                let stood = result as! HKCategorySample
+                
+                let standData = StandData(start: startDateComponents.hour!, stood: stood.value)
+                
+                if !self.dateOrder.contains(key) {
+                    self.dateOrder.append(key)
+                }
+                
+                if self.dataSource[key] != nil {
+                    self.dataSource[key]?.append(standData)
+                } else {
+                    self.dataSource[key] = [standData]
+                }
+            })
             DispatchQueue.main.async {
                 self.tableView.reloadData()
             }
         }
-        healthStore.execute(query)
+        healthStore.execute(mySampleQuery)
     }
     
     func showMessage(hasError:Bool, msg: String) {
-        messageLabel.text = msg
         if hasError {
             messageLabel.textColor = UIColor.init(hex: "#FF0098")   // Magenta
         } else {
-            messageLabel.textColor = BlueColor.getColor(palette: .pg)
+            messageLabel.textColor = BlueColor.getColor(tone: .pg)
         }
+        messageLabel.text = msg
         
-        dataSource = [HKActivitySummary]()
+        dataSource = [:]
+        dateOrder = []
         tableView.reloadData()
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
             self.messageLabel.text = ""
         }
-    }
-    
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return dataSource.count
-    }
-    
-    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let data = dataSource[indexPath.row]
-        let date = self.formatter.string(from: data.dateComponents(for: Calendar.current).date!)
-        let standUnit = HKUnit.count()
-        let count = Int(data.appleStandHours.doubleValue(for: standUnit))
-
-        let cell = tableView.dequeueReusableCell(withIdentifier: "cell")
-        cell?.textLabel?.text  = date
-        cell?.detailTextLabel?.text = "\(count) stand"
-
-        return cell!
     }
 }

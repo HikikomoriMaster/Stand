@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		DB3BAF77219D9AB3004C423B /* BlueColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB3BAF76219D9AB3004C423B /* BlueColor.swift */; };
 		DB3BAF79219DB577004C423B /* DatePickerInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB3BAF78219DB577004C423B /* DatePickerInput.swift */; };
+		DBE9F69E21A0012F00722B72 /* StandDataTableViewCell.xib in Resources */ = {isa = PBXBuildFile; fileRef = DBE9F69D21A0012F00722B72 /* StandDataTableViewCell.xib */; };
+		DBE9F6A021A003DD00722B72 /* StandDataTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBE9F69F21A003DD00722B72 /* StandDataTableViewCell.swift */; };
 		DBFC1A9A219477C900A50398 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBFC1A99219477C900A50398 /* AppDelegate.swift */; };
 		DBFC1A9C219477C900A50398 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBFC1A9B219477C900A50398 /* ViewController.swift */; };
 		DBFC1A9F219477C900A50398 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = DBFC1A9D219477C900A50398 /* Main.storyboard */; };
@@ -20,6 +22,8 @@
 /* Begin PBXFileReference section */
 		DB3BAF76219D9AB3004C423B /* BlueColor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlueColor.swift; sourceTree = "<group>"; };
 		DB3BAF78219DB577004C423B /* DatePickerInput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatePickerInput.swift; sourceTree = "<group>"; };
+		DBE9F69D21A0012F00722B72 /* StandDataTableViewCell.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = StandDataTableViewCell.xib; sourceTree = "<group>"; };
+		DBE9F69F21A003DD00722B72 /* StandDataTableViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StandDataTableViewCell.swift; sourceTree = "<group>"; };
 		DBFC1A96219477C900A50398 /* Stand.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Stand.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		DBFC1A99219477C900A50398 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		DBFC1A9B219477C900A50398 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
@@ -72,6 +76,8 @@
 				DBFC1AA5219477CE00A50398 /* Info.plist */,
 				DB3BAF76219D9AB3004C423B /* BlueColor.swift */,
 				DB3BAF78219DB577004C423B /* DatePickerInput.swift */,
+				DBE9F69D21A0012F00722B72 /* StandDataTableViewCell.xib */,
+				DBE9F69F21A003DD00722B72 /* StandDataTableViewCell.swift */,
 			);
 			path = Stand;
 			sourceTree = "<group>";
@@ -149,6 +155,7 @@
 			files = (
 				DBFC1AA4219477CE00A50398 /* LaunchScreen.storyboard in Resources */,
 				DBFC1AA1219477CE00A50398 /* Assets.xcassets in Resources */,
+				DBE9F69E21A0012F00722B72 /* StandDataTableViewCell.xib in Resources */,
 				DBFC1A9F219477C900A50398 /* Main.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -160,6 +167,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				DBE9F6A021A003DD00722B72 /* StandDataTableViewCell.swift in Sources */,
 				DBFC1A9C219477C900A50398 /* ViewController.swift in Sources */,
 				DB3BAF79219DB577004C423B /* DatePickerInput.swift in Sources */,
 				DBFC1A9A219477C900A50398 /* AppDelegate.swift in Sources */,

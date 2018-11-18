@@ -28,7 +28,7 @@ extension UIColor {
 class BlueColor: UIColor {
     
     // https://www.color-hex.com/color-palette/1294
-    enum Palette: String {
+    enum toneEnum: String {
         case vd = "#011f4b"
         case vg = "#03396c"
         case g  = "#005b96"
@@ -36,7 +36,7 @@ class BlueColor: UIColor {
         case vp = "#b3cde0"
     }
 
-    static func getColor(palette :Palette) -> UIColor {
-        return UIColor(hex: palette.rawValue)
+    static func getColor(tone :toneEnum) -> UIColor {
+        return UIColor(hex: tone.rawValue)
     }
 }
